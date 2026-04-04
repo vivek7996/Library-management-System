@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .role-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      background: var(--ink);
+      color: var(--gilt-pale);
+      border-radius: 2px;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 6px;
+    }
+    .menu-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 20px 18px;
+      background: var(--parchment);
+      border: 1px solid var(--border-ink);
+      border-radius: 2px;
+      text-decoration: none;
+      color: var(--ink);
+      transition: all 0.22s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .menu-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--gilt);
+      transform: scaleY(0);
+      transform-origin: bottom;
+      transition: transform 0.25s ease;
+    }
+    .menu-card:hover::before { transform: scaleY(1); }
+    .menu-card:hover {
+      background: var(--parchment-dark);
+      transform: translateX(4px);
+      box-shadow: 4px 4px 16px var(--shadow-ink);
+      color: var(--ink);
+      border-color: rgba(28,21,16,0.2);
+    }
+    .menu-card i {
+      font-size: 1.4rem;
+      color: var(--gilt);
+    }
+    .menu-card-title {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .menu-card-desc {
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.85rem;
+      font-style: italic;
+      color: var(--ink-faded);
+      line-height: 1.3;
+    }
+    .logout-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      padding: 11px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--burgundy);
+      border: 1px solid rgba(107,31,42,0.25);
+      border-radius: 2px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      background: rgba(107,31,42,0.04);
+    }
+    .logout-link:hover {
+      background: rgba(107,31,42,0.1);
+      border-color: var(--burgundy);
+      color: var(--burgundy);
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:520px;">
+    <div class="dashboard-header">
+      <div>
+        <h1 style="text-align:left; font-size:1.7rem;">Admin Dashboard</h1>
+        <p style="font-family:'Crimson Pro',serif; font-style:italic; color:var(--ink-faded); font-size:0.95rem;">
+          Full system access
+        </p>
+      </div>
+      <span class="role-badge"><i class="fa-solid fa-shield-halved"></i> &nbsp;Admin</span>
+    </div>
+
+    <div class="section-rule"><span>Management Tools</span></div>
+
+    <div class="menu-grid">
+      <a href="add_book.html" class="menu-card">
+        <i class="fa-solid fa-book-medical"></i>
+        <span class="menu-card-title">Add Book</span>
+        <span class="menu-card-desc">Register a new title to the catalogue</span>
+      </a>
+      <a href="view_books.html" class="menu-card">
+        <i class="fa-solid fa-books"></i>
+        <span class="menu-card-title">View Books</span>
+        <span class="menu-card-desc">Browse the full book inventory</span>
+      </a>
+      <a href="search_book.html" class="menu-card">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <span class="menu-card-title">Search Books</span>
+        <span class="menu-card-desc">Find by title, author or keyword</span>
+      </a>
+      <a href="add_user.html" class="menu-card">
+        <i class="fa-solid fa-user-plus"></i>
+        <span class="menu-card-title">Add User</span>
+        <span class="menu-card-desc">Register a new student member</span>
+      </a>
+      <a href="view_users.html" class="menu-card">
+        <i class="fa-solid fa-users"></i>
+        <span class="menu-card-title">View Users</span>
+        <span class="menu-card-desc">See all registered members</span>
+      </a>
+      <a href="view_fines.html" class="menu-card">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+        <span class="menu-card-title">View Fines</span>
+        <span class="menu-card-desc">Check overdue records &amp; fines</span>
+      </a>
+    </div>
+
+    <a href="index.html" class="logout-link">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout of system
+    </a>
+  </div>
+</body>
+</html>

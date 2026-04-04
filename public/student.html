@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard — Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .role-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      background: var(--forest);
+      color: rgba(255,255,255,0.88);
+      border-radius: 2px;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 6px;
+    }
+    .menu-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 20px 18px;
+      background: var(--parchment);
+      border: 1px solid var(--border-ink);
+      border-radius: 2px;
+      text-decoration: none;
+      color: var(--ink);
+      transition: all 0.22s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .menu-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--gilt);
+      transform: scaleY(0);
+      transform-origin: bottom;
+      transition: transform 0.25s ease;
+    }
+    .menu-card:hover::before { transform: scaleY(1); }
+    .menu-card:hover {
+      background: var(--parchment-dark);
+      transform: translateX(4px);
+      box-shadow: 4px 4px 16px var(--shadow-ink);
+      color: var(--ink);
+      border-color: rgba(28,21,16,0.2);
+    }
+    .menu-card i {
+      font-size: 1.4rem;
+      color: var(--gilt);
+    }
+    .menu-card-title {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .menu-card-desc {
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.85rem;
+      font-style: italic;
+      color: var(--ink-faded);
+      line-height: 1.3;
+    }
+    .info-strip {
+      background: rgba(184,146,42,0.07);
+      border: 1px solid var(--border-gilt);
+      border-radius: 2px;
+      padding: 11px 14px;
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.88rem;
+      color: var(--ink-faded);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .info-strip i { color: var(--gilt); flex-shrink: 0; }
+    .logout-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 11px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--burgundy);
+      border: 1px solid rgba(107,31,42,0.25);
+      border-radius: 2px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      background: rgba(107,31,42,0.04);
+    }
+    .logout-link:hover {
+      background: rgba(107,31,42,0.1);
+      border-color: var(--burgundy);
+      color: var(--burgundy);
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:520px;">
+    <div class="dashboard-header">
+      <div>
+        <h1 style="text-align:left; font-size:1.7rem;">Student Portal</h1>
+        <p style="font-family:'Crimson Pro',serif; font-style:italic; color:var(--ink-faded); font-size:0.95rem;">
+          Welcome back, member
+        </p>
+      </div>
+      <span class="role-badge"><i class="fa-solid fa-graduation-cap"></i> &nbsp;Student</span>
+    </div>
+
+    <div class="section-rule"><span>Library Services</span></div>
+
+    <div class="menu-grid">
+      <a href="search_book.html" class="menu-card">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <span class="menu-card-title">Search Books</span>
+        <span class="menu-card-desc">Find books by title or author</span>
+      </a>
+      <a href="issue_book.html" class="menu-card">
+        <i class="fa-solid fa-book-open"></i>
+        <span class="menu-card-title">Issue a Book</span>
+        <span class="menu-card-desc">Borrow a book from the library</span>
+      </a>
+      <a href="return_book.html" class="menu-card">
+        <i class="fa-solid fa-rotate-left"></i>
+        <span class="menu-card-title">Return Book</span>
+        <span class="menu-card-desc">Return a borrowed book</span>
+      </a>
+      <a href="view_fines.html" class="menu-card">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+        <span class="menu-card-title">My Fines</span>
+        <span class="menu-card-desc">View issued books &amp; any fines</span>
+      </a>
+    </div>
+
+    <div class="info-strip">
+      <i class="fa-solid fa-circle-info"></i>
+      You may borrow up to <strong>&nbsp;3 books&nbsp;</strong> at a time. Fine: ₹2 per day after 7 days.
+    </div>
+
+    <a href="index.html" class="logout-link">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout of system
+    </a>
+  </div>
+</body>
+</html>

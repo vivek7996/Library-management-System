@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Return Book — Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-wrap { position: relative; }
+    .input-wrap i {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-faded); font-size: 0.85rem; pointer-events: none;
+    }
+    .input-wrap input { padding-left: 40px; }
+    .date-helper {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--ink-faded);
+      margin-top: 4px;
+    }
+    .date-helper strong { color: var(--gilt); }
+    .receipt {
+      display: none;
+      background: var(--parchment);
+      border: 1px solid var(--border-ink);
+      border-top: 3px solid var(--gilt);
+      border-radius: 2px;
+      padding: 18px 20px;
+      margin-top: 4px;
+    }
+    .receipt-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .receipt-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border-ink);
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.95rem;
+      color: var(--ink-faded);
+    }
+    .receipt-row:last-child { border-bottom: none; }
+    .receipt-row strong { color: var(--ink); font-family: 'DM Mono', monospace; font-size: 0.85rem; }
+    .fine-row strong { color: var(--burgundy); }
+    .fine-ok strong { color: var(--forest); }
+    #resultMsg { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:460px;">
+    <div style="text-align:center; font-size:2rem; margin-bottom:10px;">↩️</div>
+    <h1>Return a Book</h1>
+    <p class="subtitle">Return a borrowed book &amp; view any fine</p>
+
+    <form id="returnForm" action="/return-book" method="post">
+      <div class="form-group">
+        <label for="userId"><i class="fa-solid fa-id-card"></i> Your User ID</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-hashtag"></i>
+          <input type="number" id="userId" name="userId" placeholder="Enter your user ID" min="1" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bookId"><i class="fa-solid fa-book"></i> Book ID</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-barcode"></i>
+          <input type="number" id="bookId" name="bookId" placeholder="Enter the book ID" min="1" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="returnDate"><i class="fa-solid fa-calendar"></i> Return Date</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-calendar-day"></i>
+          <input type="number" id="returnDate" name="returnDate" placeholder="Days since epoch" min="0" required>
+        </div>
+        <p class="date-helper">Today's value: <strong id="todayEpoch">—</strong>
+          &nbsp;<span style="cursor:pointer; color:var(--gilt);" onclick="fillToday()">(use today)</span>
+        </p>
+      </div>
+
+      <div id="resultMsg"></div>
+      <div class="receipt" id="receipt"></div>
+      <button type="submit"><i class="fa-solid fa-rotate-left"></i> &nbsp;Return Book</button>
+    </form>
+
+    <div style="text-align:center; margin-top:20px;">
+      <a href="student.html" class="back-link">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    const today = Math.floor(Date.now() / 86400000);
+    document.getElementById('todayEpoch').textContent = today;
+
+    function fillToday() {
+      document.getElementById('returnDate').value = today;
+    }
+
+    document.getElementById('returnForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = this.querySelector('button[type="submit"]');
+      const msg = document.getElementById('resultMsg');
+      const receipt = document.getElementById('receipt');
+      btn.innerHTML = '<span class="loading"></span>';
+      btn.disabled = true;
+      msg.style.display = 'none';
+      receipt.style.display = 'none';
+      try {
+        const res = await fetch('/return-book', { method: 'POST', body: new URLSearchParams(new FormData(this)) });
+        const text = await res.text();
+        // Parse "Book returned. Days: X, Fine: Rs. Y"
+        const daysM = text.match(/Days:\s*(\d+)/);
+        const fineM = text.match(/Fine:\s*Rs\.\s*(\d+)/i) || text.match(/Fine:\s*₹?\s*(\d+)/i);
+        if (text.toLowerCase().includes('returned') && daysM) {
+          const days = parseInt(daysM[1]);
+          const fine = fineM ? parseInt(fineM[1]) : 0;
+          const overdue = days > 7;
+          receipt.style.display = 'block';
+          receipt.innerHTML = `
+            <div class="receipt-title"><i class="fa-solid fa-receipt" style="color:var(--gilt)"></i> Return Receipt</div>
+            <div class="receipt-row">Days borrowed <strong>${days}</strong></div>
+            <div class="receipt-row">Due period <strong>7 days</strong></div>
+            <div class="receipt-row ${overdue ? 'fine-row' : 'fine-ok'}">
+              Fine ${overdue ? '(overdue ' + (days - 7) + ' day' + (days - 7 > 1 ? 's' : '') + ')' : '(no overdue)'}
+              <strong>₹ ${fine}</strong>
+            </div>
+          `;
+          msg.style.display = 'flex';
+          msg.className = overdue ? 'error-msg' : 'success-msg';
+          msg.innerHTML = overdue
+            ? '<i class="fa-solid fa-triangle-exclamation"></i> &nbsp;Book returned. Overdue fine: <strong>&nbsp;₹' + fine + '</strong>'
+            : '<i class="fa-solid fa-circle-check"></i> &nbsp;Book returned successfully. No fine.';
+        } else {
+          msg.style.display = 'flex';
+          msg.className = 'error-msg';
+          msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;' + text.trim();
+        }
+      } catch {
+        msg.style.display = 'flex';
+        msg.className = 'error-msg';
+        msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;Connection error.';
+      }
+      btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> &nbsp;Return Book';
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>

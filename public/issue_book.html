@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Issue Book — Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-wrap { position: relative; }
+    .input-wrap i {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-faded); font-size: 0.85rem; pointer-events: none;
+    }
+    .input-wrap input { padding-left: 40px; }
+    .policy-box {
+      background: rgba(184,146,42,0.07);
+      border: 1px solid var(--border-gilt);
+      border-radius: 2px;
+      padding: 12px 16px;
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.9rem;
+      color: var(--ink-faded);
+    }
+    .policy-box ul { padding-left: 16px; margin-top: 4px; }
+    .policy-box li { margin-bottom: 3px; }
+    .policy-box i { color: var(--gilt); margin-right: 6px; }
+    #resultMsg { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:460px;">
+    <div style="text-align:center; font-size:2rem; margin-bottom:10px;">📖</div>
+    <h1>Issue a Book</h1>
+    <p class="subtitle">Borrow a book from the library</p>
+
+    <form id="issueForm" action="/issue-book" method="post">
+      <div class="form-group">
+        <label for="userId"><i class="fa-solid fa-id-card"></i> Your User ID</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-hashtag"></i>
+          <input type="number" id="userId" name="userId" placeholder="Enter your user ID" min="1" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bookId"><i class="fa-solid fa-book"></i> Book ID</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-barcode"></i>
+          <input type="number" id="bookId" name="bookId" placeholder="Enter the book ID" min="1" required>
+        </div>
+      </div>
+
+      <div class="policy-box">
+        <i class="fa-solid fa-circle-info"></i> <strong>Borrowing Policy</strong>
+        <ul>
+          <li>Maximum <strong>3 books</strong> per member at once</li>
+          <li>Return within <strong>7 days</strong> to avoid fines</li>
+          <li>Fine: <strong>₹2 per day</strong> after the due date</li>
+        </ul>
+      </div>
+
+      <div id="resultMsg"></div>
+      <button type="submit"><i class="fa-solid fa-book-open"></i> &nbsp;Issue Book</button>
+    </form>
+
+    <div style="text-align:center; margin-top:20px;">
+      <a href="student.html" class="back-link">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('issueForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = this.querySelector('button[type="submit"]');
+      const msg = document.getElementById('resultMsg');
+      btn.innerHTML = '<span class="loading"></span>';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/issue-book', { method: 'POST', body: new URLSearchParams(new FormData(this)) });
+        const text = await res.text();
+        msg.style.display = 'flex';
+        const t = text.toLowerCase();
+        if (t.includes('success') || t.includes('issued')) {
+          msg.className = 'success-msg';
+          msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> &nbsp;' + text.trim();
+        } else {
+          msg.className = 'error-msg';
+          msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;' + text.trim();
+        }
+      } catch {
+        msg.style.display = 'flex';
+        msg.className = 'error-msg';
+        msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;Connection error.';
+      }
+      btn.innerHTML = '<i class="fa-solid fa-book-open"></i> &nbsp;Issue Book';
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>

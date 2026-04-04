@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Books — Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .search-wrap { position: relative; }
+    .search-wrap i {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-faded); font-size: 0.95rem; pointer-events: none;
+    }
+    .search-wrap input { padding-left: 44px; padding-right: 48px; font-size: 1.1rem; }
+    .search-wrap button {
+      position: absolute; right: 0; top: 0; bottom: 0;
+      padding: 0 16px; border-radius: 0 2px 2px 0;
+      font-size: 0.8rem; box-shadow: none;
+    }
+    .search-wrap button:hover { transform: none; box-shadow: none; }
+    #results { margin-top: 20px; }
+    .result-card {
+      background: var(--parchment);
+      border: 1px solid var(--border-ink);
+      border-left: 3px solid var(--gilt);
+      border-radius: 2px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      animation: fadeInUp 0.3s ease both;
+    }
+    .result-card:nth-child(2) { animation-delay: 0.06s; }
+    .result-card:nth-child(3) { animation-delay: 0.12s; }
+    .result-card:nth-child(4) { animation-delay: 0.18s; }
+    .result-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .result-author {
+      font-family: 'Crimson Pro', serif;
+      font-style: italic;
+      color: var(--ink-faded);
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+    .result-meta {
+      display: flex; gap: 12px; align-items: center;
+      flex-wrap: wrap;
+    }
+    .meta-item {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-faded);
+    }
+    .meta-item strong { color: var(--ink); }
+    #status { display: none; }
+    .back-row {
+      display: flex; gap: 16px; justify-content: center;
+      margin-top: 20px; flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:520px;">
+    <div style="text-align:center; font-size:2rem; margin-bottom:10px;">🔍</div>
+    <h1>Search Books</h1>
+    <p class="subtitle">Search by title, author, or keyword</p>
+
+    <form id="searchForm" onsubmit="doSearch(event)">
+      <div class="search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="keyword" name="keyword"
+               placeholder="Type a title, author, or keyword…" required autocomplete="off">
+        <button type="submit"><i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+    </form>
+
+    <div id="status"></div>
+    <div id="results"></div>
+
+    <div class="back-row">
+      <a href="admin.html" class="back-link">Admin Dashboard</a>
+      <a href="student.html" class="back-link">Student Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    async function doSearch(e) {
+      e.preventDefault();
+      const kw = document.getElementById('keyword').value.trim();
+      const status = document.getElementById('status');
+      const results = document.getElementById('results');
+      status.style.display = 'flex';
+      status.className = 'info-msg';
+      status.innerHTML = '<span class="loading"></span> &nbsp;Searching catalogue…';
+      results.innerHTML = '';
+      try {
+        const res = await fetch('/search-book?keyword=' + encodeURIComponent(kw));
+        const text = await res.text();
+        status.style.display = 'none';
+        results.innerHTML = '';
+        if (text.includes('No books found') || text.trim() === '') {
+          results.innerHTML = '<div class="error-msg"><i class="fa-solid fa-book-open"></i> &nbsp;No books found for "<em>' + kw + '</em>".</div>';
+          return;
+        }
+        // Parse lines like "ID: 1, Title: Foo, Author: Bar, Qty: 3"
+        const lines = text.trim().split('\n').filter(l => l.trim());
+        lines.forEach((line, i) => {
+          const idM = line.match(/ID:\s*(\d+)/);
+          const titleM = line.match(/Title:\s*([^,]+)/);
+          const authorM = line.match(/Author:\s*([^,]+)/);
+          const qtyM = line.match(/Qty:\s*(\d+)/);
+          if (titleM) {
+            const qty = qtyM ? parseInt(qtyM[1]) : 0;
+            const avail = qty > 0
+              ? '<span class="badge badge-forest">Available · ' + qty + ' copies</span>'
+              : '<span class="badge badge-burgundy">Unavailable</span>';
+            results.innerHTML += `
+              <div class="result-card" style="animation-delay:${i * 0.06}s">
+                <div class="result-title">${titleM[1].trim()}</div>
+                <div class="result-author">${authorM ? authorM[1].trim() : '—'}</div>
+                <div class="result-meta">
+                  ${idM ? '<span class="meta-item">Book ID: <strong>' + idM[1] + '</strong></span>' : ''}
+                  ${avail}
+                </div>
+              </div>`;
+          } else {
+            results.innerHTML += '<div class="result-card"><span class="meta-item">' + line + '</span></div>';
+          }
+        });
+      } catch {
+        status.className = 'error-msg';
+        status.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;Connection error. Please try again.';
+      }
+    }
+  </script>
+</body>
+</html>

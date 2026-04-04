@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Books — Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .filter-bar {
+      display: flex; gap: 10px; align-items: center;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .filter-bar input {
+      flex: 1; min-width: 160px;
+      padding: 10px 14px; font-size: 0.95rem;
+    }
+    .filter-bar select { padding: 10px 14px; font-size: 0.9rem; }
+    .summary-strip {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-faded);
+      margin-bottom: 10px;
+    }
+    .summary-strip strong { color: var(--gilt); }
+    #tableWrap { overflow-x: auto; }
+    table { min-width: 480px; }
+    .qty-low { color: var(--burgundy); font-weight: 600; }
+    .qty-ok  { color: var(--forest); }
+    #loadBtn { margin: 0 auto; display: block; }
+    #status { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:680px;">
+    <div style="text-align:center; font-size:2rem; margin-bottom:10px;">📚</div>
+    <h1>Book Catalogue</h1>
+    <p class="subtitle">Full inventory of the library</p>
+
+    <button id="loadBtn" onclick="loadBooks()">
+      <i class="fa-solid fa-rotate"></i> &nbsp;Load All Books
+    </button>
+
+    <div id="status" style="margin-top:14px;"></div>
+    <div id="bookList" style="margin-top:14px;"></div>
+
+    <div style="text-align:center; margin-top:20px;">
+      <a href="admin.html" class="back-link">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    async function loadBooks() {
+      const btn = document.getElementById('loadBtn');
+      const status = document.getElementById('status');
+      const bookList = document.getElementById('bookList');
+      btn.innerHTML = '<span class="loading"></span>';
+      btn.disabled = true;
+      status.style.display = 'flex';
+      status.className = 'info-msg';
+      status.innerHTML = '<span class="loading"></span> &nbsp;Fetching catalogue…';
+      bookList.innerHTML = '';
+      try {
+        const res = await fetch('/view-books');
+        const text = await res.text();
+        status.style.display = 'none';
+        if (text.includes('No books')) {
+          bookList.innerHTML = '<div class="error-msg"><i class="fa-solid fa-box-open"></i> &nbsp;No books in the catalogue yet.</div>';
+          btn.innerHTML = '<i class="fa-solid fa-rotate"></i> &nbsp;Reload';
+          btn.disabled = false;
+          return;
+        }
+        // Parse lines: "ID: 1, Title: Foo, Author: Bar, Qty: 3"
+        const lines = text.trim().split('\n').filter(l => l.trim() && l.includes('ID:'));
+        const books = lines.map(line => {
+          const idM = line.match(/ID:\s*(\d+)/);
+          const titleM = line.match(/Title:\s*([^,]+)/);
+          const authorM = line.match(/Author:\s*([^,]+)/);
+          const qtyM = line.match(/Qty:\s*(\d+)/);
+          return {
+            id: idM ? idM[1] : '—',
+            title: titleM ? titleM[1].trim() : '—',
+            author: authorM ? authorM[1].trim() : '—',
+            qty: qtyM ? parseInt(qtyM[1]) : 0
+          };
+        });
+
+        bookList.innerHTML = `
+          <div class="filter-bar">
+            <input type="text" id="filterInput" placeholder="Filter by title or author…" oninput="filterTable()">
+            <select id="filterQty" onchange="filterTable()">
+              <option value="all">All stock</option>
+              <option value="available">Available only</option>
+              <option value="low">Low stock (≤2)</option>
+            </select>
+          </div>
+          <div class="summary-strip" id="summary">Showing <strong>${books.length}</strong> books</div>
+          <div class="table-container" id="tableWrap">
+            <table id="booksTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Author</th>
+                  <th>Qty</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody">
+                ${books.map(b => `
+                  <tr data-title="${b.title.toLowerCase()}" data-author="${b.author.toLowerCase()}" data-qty="${b.qty}">
+                    <td>${b.id}</td>
+                    <td style="font-family:'Crimson Pro',serif; font-weight:600;">${b.title}</td>
+                    <td style="font-family:'Crimson Pro',serif; font-style:italic;">${b.author}</td>
+                    <td class="${b.qty <= 2 ? 'qty-low' : 'qty-ok'}">${b.qty}</td>
+                    <td>${b.qty > 2
+                        ? '<span class="badge badge-forest">In Stock</span>'
+                        : b.qty > 0
+                          ? '<span class="badge badge-gilt">Low</span>'
+                          : '<span class="badge badge-burgundy">Out</span>'}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+      } catch {
+        status.style.display = 'flex';
+        status.className = 'error-msg';
+        status.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;Connection error.';
+        btn.innerHTML = '<i class="fa-solid fa-rotate"></i> &nbsp;Retry';
+        btn.disabled = false;
+      }
+      btn.innerHTML = '<i class="fa-solid fa-rotate"></i> &nbsp;Reload';
+      btn.disabled = false;
+    }
+
+    function filterTable() {
+      const kw = document.getElementById('filterInput').value.toLowerCase();
+      const qtyFilter = document.getElementById('filterQty').value;
+      const rows = document.querySelectorAll('#tableBody tr');
+      let visible = 0;
+      rows.forEach(row => {
+        const title = row.dataset.title;
+        const author = row.dataset.author;
+        const qty = parseInt(row.dataset.qty);
+        const matchText = title.includes(kw) || author.includes(kw);
+        const matchQty = qtyFilter === 'all' || (qtyFilter === 'available' && qty > 0) || (qtyFilter === 'low' && qty <= 2);
+        const show = matchText && matchQty;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      document.getElementById('summary').innerHTML = 'Showing <strong>' + visible + '</strong> books';
+    }
+  </script>
+</body>
+</html>

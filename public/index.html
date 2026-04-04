@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Management System</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .hero-symbol {
+      font-size: 3.5rem;
+      text-align: center;
+      margin-bottom: 12px;
+      animation: revealCard 0.5s ease both;
+    }
+    .portal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .portal-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 26px 16px;
+      background: var(--parchment);
+      border: 1px solid var(--border-ink);
+      border-radius: 2px;
+      text-decoration: none;
+      color: var(--ink);
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.05rem;
+      font-weight: 500;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .portal-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gilt), transparent);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+    .portal-card:hover::after { transform: scaleX(1); }
+    .portal-card:hover {
+      background: var(--parchment-dark);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px var(--shadow-deep);
+      border-color: var(--border-gilt);
+      color: var(--ink);
+    }
+    .portal-card i {
+      font-size: 1.8rem;
+      color: var(--gilt);
+    }
+    .portal-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-faded);
+      margin-top: 2px;
+    }
+    .footer-note {
+      text-align: center;
+      margin-top: 28px;
+      font-family: 'Crimson Pro', serif;
+      font-style: italic;
+      font-size: 0.88rem;
+      color: var(--ink-faded);
+    }
+    .footer-note a {
+      color: var(--gilt);
+      font-style: normal;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:480px;">
+    <div class="hero-symbol">📚</div>
+    <h1>Library Management</h1>
+    <p class="subtitle">An academic collection, elegantly managed</p>
+
+    <div class="section-rule"><span>Select your portal</span></div>
+
+    <div class="portal-grid">
+      <a href="admin.html" class="portal-card">
+        <i class="fa-solid fa-shield-halved"></i>
+        Administration
+        <span class="portal-label">Admin Portal</span>
+      </a>
+      <a href="login.html" class="portal-card">
+        <i class="fa-solid fa-graduation-cap"></i>
+        Student Access
+        <span class="portal-label">Member Portal</span>
+      </a>
+    </div>
+
+    <p class="footer-note">
+      Academic Library System &mdash; v2.0
+    </p>
+  </div>
+</body>
+</html>

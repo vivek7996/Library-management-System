@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Book — Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-wrap { position: relative; }
+    .input-wrap i {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-faded); font-size: 0.85rem; pointer-events: none;
+    }
+    .input-wrap input { padding-left: 40px; }
+    .char-count {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--ink-faded);
+      text-align: right;
+      margin-top: 3px;
+    }
+    #resultMsg { display: none; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:460px;">
+    <div style="text-align:center; font-size:2rem; margin-bottom:10px;">📗</div>
+    <h1>Add New Book</h1>
+    <p class="subtitle">Register a title to the catalogue</p>
+
+    <form id="addBookForm" action="/add-book" method="post">
+      <div class="form-group">
+        <label for="title"><i class="fa-solid fa-book"></i> Book Title</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-pen-nib"></i>
+          <input type="text" id="title" name="title" placeholder="e.g. The Great Gatsby"
+                 maxlength="120" oninput="countChars('title','titleCount',120)" required>
+        </div>
+        <span class="char-count" id="titleCount">0 / 120</span>
+      </div>
+
+      <div class="form-group">
+        <label for="author"><i class="fa-solid fa-user-pen"></i> Author</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-feather-pointed"></i>
+          <input type="text" id="author" name="author" placeholder="e.g. F. Scott Fitzgerald"
+                 maxlength="80" oninput="countChars('author','authorCount',80)" required>
+        </div>
+        <span class="char-count" id="authorCount">0 / 80</span>
+      </div>
+
+      <div class="form-group">
+        <label for="quantity"><i class="fa-solid fa-layer-group"></i> Quantity</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-hashtag"></i>
+          <input type="number" id="quantity" name="quantity" placeholder="Number of copies"
+                 min="1" max="999" required>
+        </div>
+      </div>
+
+      <div id="resultMsg"></div>
+      <button type="submit"><i class="fa-solid fa-plus"></i> &nbsp;Add to Catalogue</button>
+    </form>
+
+    <div style="text-align:center; margin-top:20px;">
+      <a href="admin.html" class="back-link">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    function countChars(inputId, countId, max) {
+      const len = document.getElementById(inputId).value.length;
+      document.getElementById(countId).textContent = len + ' / ' + max;
+    }
+    document.getElementById('addBookForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = this.querySelector('button[type="submit"]');
+      const msg = document.getElementById('resultMsg');
+      btn.innerHTML = '<span class="loading"></span>';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/add-book', { method: 'POST', body: new URLSearchParams(new FormData(this)) });
+        const text = await res.text();
+        msg.style.display = 'flex';
+        if (text.toLowerCase().includes('added')) {
+          msg.className = 'success-msg';
+          msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> &nbsp;' + text.trim();
+          this.reset();
+          ['titleCount','authorCount'].forEach(id => document.getElementById(id).textContent = '0 / ' + (id==='titleCount'?120:80));
+        } else {
+          msg.className = 'error-msg';
+          msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;' + text.trim();
+        }
+      } catch {
+        msg.style.display = 'flex';
+        msg.className = 'error-msg';
+        msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;Connection error. Please try again.';
+      }
+      btn.innerHTML = '<i class="fa-solid fa-plus"></i> &nbsp;Add to Catalogue';
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>

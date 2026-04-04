@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Books &amp; Fines — Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-wrap { position: relative; }
+    .input-wrap i {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-faded); font-size: 0.85rem; pointer-events: none;
+    }
+    .input-wrap input { padding-left: 40px; }
+    .book-card {
+      background: var(--parchment);
+      border: 1px solid var(--border-ink);
+      border-left: 3px solid var(--gilt);
+      border-radius: 2px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      animation: fadeInUp 0.3s ease both;
+    }
+    .book-card.overdue { border-left-color: var(--burgundy); }
+    .book-card:nth-child(2) { animation-delay: 0.06s; }
+    .book-card:nth-child(3) { animation-delay: 0.12s; }
+    .book-card-header {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    }
+    .book-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .book-meta {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-faded);
+      margin-top: 6px;
+    }
+    .fine-amount {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--burgundy);
+      white-space: nowrap;
+    }
+    .no-fine { color: var(--forest); }
+    #resultArea { display: none; margin-top: 4px; }
+    #status { display: none; }
+    .total-fine-box {
+      background: rgba(107,31,42,0.07);
+      border: 1px solid rgba(107,31,42,0.2);
+      border-radius: 2px;
+      padding: 13px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .total-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-faded);
+    }
+    .total-amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--burgundy);
+    }
+    .total-ok { color: var(--forest); }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:480px;">
+    <div style="text-align:center; font-size:2rem; margin-bottom:10px;">📋</div>
+    <h1>My Books &amp; Fines</h1>
+    <p class="subtitle">View your issued books and any outstanding fines</p>
+
+    <form id="finesForm" onsubmit="loadFines(event)">
+      <div class="form-group">
+        <label for="userId"><i class="fa-solid fa-id-card"></i> Your User ID</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-hashtag"></i>
+          <input type="number" id="userId" name="userId" placeholder="Enter your user ID" min="1" required>
+        </div>
+      </div>
+      <button type="submit"><i class="fa-solid fa-magnifying-glass"></i> &nbsp;View My Books</button>
+    </form>
+
+    <div id="status" style="margin-top:14px;"></div>
+    <div id="resultArea" style="margin-top:14px;"></div>
+
+    <div style="text-align:center; margin-top:20px;">
+      <a href="student.html" class="back-link">Back to Dashboard</a>
+      <span style="color:var(--border-ink); margin:0 8px;">|</span>
+      <a href="admin.html" class="back-link">Admin Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    const TODAY = Math.floor(Date.now() / 86400000);
+    const DUE_DAYS = 7;
+    const FINE_PER_DAY = 2;
+
+    async function loadFines(e) {
+      e.preventDefault();
+      const userId = document.getElementById('userId').value;
+      const btn = this.querySelector('button[type="submit"]') || document.querySelector('#finesForm button');
+      const status = document.getElementById('status');
+      const resultArea = document.getElementById('resultArea');
+      btn.innerHTML = '<span class="loading"></span>';
+      btn.disabled = true;
+      status.style.display = 'flex';
+      status.className = 'info-msg';
+      status.innerHTML = '<span class="loading"></span> &nbsp;Fetching your records…';
+      resultArea.style.display = 'none';
+      resultArea.innerHTML = '';
+      try {
+        const res = await fetch('/list-issued?userId=' + encodeURIComponent(userId));
+        const text = await res.text();
+        status.style.display = 'none';
+        resultArea.style.display = 'block';
+        if (text.includes('No books') || text.trim() === '') {
+          resultArea.innerHTML = '<div class="success-msg"><i class="fa-solid fa-circle-check"></i> &nbsp;No books currently issued.</div>';
+          btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> &nbsp;View My Books';
+          btn.disabled = false;
+          return;
+        }
+        // Parse lines: "Book ID: 1, Title: Foo, Issued on: 20000"
+        const lines = text.trim().split('\n').filter(l => l.trim() && l.includes('Book ID:'));
+        let totalFine = 0;
+        let cards = '';
+        lines.forEach((line, i) => {
+          const idM = line.match(/Book ID:\s*(\d+)/);
+          const titleM = line.match(/Title:\s*([^,]+)/);
+          const issuedM = line.match(/Issued on:\s*(\d+)/);
+          const bookId = idM ? idM[1] : '—';
+          const title = titleM ? titleM[1].trim() : 'Unknown Title';
+          const issuedDay = issuedM ? parseInt(issuedM[1]) : TODAY;
+          const daysHeld = TODAY - issuedDay;
+          const overdue = daysHeld > DUE_DAYS;
+          const fine = overdue ? (daysHeld - DUE_DAYS) * FINE_PER_DAY : 0;
+          totalFine += fine;
+          const dueDate = issuedDay + DUE_DAYS;
+          const daysLeft = dueDate - TODAY;
+          cards += `
+            <div class="book-card ${overdue ? 'overdue' : ''}" style="animation-delay:${i*0.07}s">
+              <div class="book-card-header">
+                <div>
+                  <div class="book-title">${title}</div>
+                  <div class="book-meta">
+                    Book ID: ${bookId} &nbsp;·&nbsp; Issued: day ${issuedDay} &nbsp;·&nbsp;
+                    ${overdue
+                      ? '<span style="color:var(--burgundy);">Overdue by ' + (daysHeld - DUE_DAYS) + ' day(s)</span>'
+                      : daysLeft === 0 ? '<span style="color:var(--gilt);">Due today</span>'
+                        : '<span style="color:var(--forest);">' + daysLeft + ' day(s) left</span>'}
+                  </div>
+                </div>
+                <div class="${fine > 0 ? 'fine-amount' : 'fine-amount no-fine'}">
+                  ${fine > 0 ? '₹ ' + fine : 'No fine'}
+                </div>
+              </div>
+              ${overdue ? '<div style="margin-top:8px;">' +
+                '<span class="badge badge-burgundy">Overdue</span>' + '</div>' : ''}
+            </div>`;
+        });
+        resultArea.innerHTML = `
+          <div class="total-fine-box">
+            <span class="total-label"><i class="fa-solid fa-file-invoice-dollar"></i> &nbsp;Total Fine Due</span>
+            <span class="total-amount ${totalFine === 0 ? 'total-ok' : ''}">₹ ${totalFine}</span>
+          </div>
+          ${cards}`;
+      } catch {
+        status.style.display = 'flex';
+        status.className = 'error-msg';
+        status.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;Connection error.';
+      }
+      btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> &nbsp;View My Books';
+      btn.disabled = false;
+    }
+
+    document.getElementById('finesForm').addEventListener('submit', loadFines);
+  </script>
+</body>
+</html>

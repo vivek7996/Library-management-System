@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add User — Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-wrap { position: relative; }
+    .input-wrap i {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-faded); font-size: 0.85rem; pointer-events: none;
+    }
+    .input-wrap input { padding-left: 40px; }
+    .toggle-pw {
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer; color: var(--ink-faded); font-size: 0.85rem;
+      background: none; border: none; padding: 0;
+      box-shadow: none; text-transform: none; letter-spacing: 0;
+    }
+    .toggle-pw:hover { color: var(--gilt); transform: translateY(-50%); box-shadow: none; }
+    .pw-strength {
+      height: 3px;
+      border-radius: 2px;
+      background: var(--parchment-dark);
+      margin-top: 5px;
+      overflow: hidden;
+    }
+    .pw-strength-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
+    .pw-hint {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.63rem;
+      color: var(--ink-faded);
+      margin-top: 4px;
+    }
+    #resultMsg { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:460px;">
+    <div style="text-align:center; font-size:2rem; margin-bottom:10px;">👤</div>
+    <h1>Add New User</h1>
+    <p class="subtitle">Register a student member</p>
+
+    <form id="addUserForm" action="/add-user" method="post">
+      <div class="form-group">
+        <label for="username"><i class="fa-solid fa-user"></i> Username</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-at"></i>
+          <input type="text" id="username" name="username"
+                 placeholder="Choose a username" autocomplete="off" required
+                 pattern="[a-zA-Z0-9_]{3,}" title="At least 3 characters, letters/numbers/underscore">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-key"></i>
+          <input type="password" id="password" name="password"
+                 placeholder="Set a secure password" autocomplete="new-password"
+                 oninput="checkStrength(this.value)" required minlength="4">
+          <button type="button" class="toggle-pw" onclick="togglePw()" title="Toggle visibility">
+            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+        <div class="pw-strength"><div class="pw-strength-bar" id="pwBar"></div></div>
+        <p class="pw-hint" id="pwHint">Enter a password</p>
+      </div>
+
+      <div id="resultMsg"></div>
+      <button type="submit"><i class="fa-solid fa-user-plus"></i> &nbsp;Register Member</button>
+    </form>
+
+    <div style="text-align:center; margin-top:20px;">
+      <a href="admin.html" class="back-link">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    function togglePw() {
+      const pw = document.getElementById('password');
+      const icon = document.getElementById('eyeIcon');
+      if (pw.type === 'password') { pw.type = 'text'; icon.className = 'fa-solid fa-eye-slash'; }
+      else { pw.type = 'password'; icon.className = 'fa-solid fa-eye'; }
+    }
+    function checkStrength(val) {
+      const bar = document.getElementById('pwBar');
+      const hint = document.getElementById('pwHint');
+      let score = 0;
+      if (val.length >= 6) score++;
+      if (val.length >= 10) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^a-zA-Z0-9]/.test(val)) score++;
+      const levels = [
+        { pct: '0%', color: 'transparent', text: 'Enter a password' },
+        { pct: '25%', color: 'var(--burgundy)', text: 'Weak' },
+        { pct: '50%', color: '#d4843a', text: 'Fair' },
+        { pct: '75%', color: 'var(--gilt)', text: 'Good' },
+        { pct: '100%', color: 'var(--forest)', text: 'Strong' },
+      ];
+      const level = val.length === 0 ? levels[0] : score <= 1 ? levels[1] : score === 2 ? levels[2] : score <= 3 ? levels[3] : levels[4];
+      bar.style.width = val.length ? level.pct : '0%';
+      bar.style.background = level.color;
+      hint.textContent = val.length ? 'Strength: ' + level.text : 'Enter a password';
+    }
+    document.getElementById('addUserForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = this.querySelector('button[type="submit"]');
+      const msg = document.getElementById('resultMsg');
+      btn.innerHTML = '<span class="loading"></span>';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/add-user', { method: 'POST', body: new URLSearchParams(new FormData(this)) });
+        const text = await res.text();
+        msg.style.display = 'flex';
+        if (text.toLowerCase().includes('added')) {
+          msg.className = 'success-msg';
+          msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> &nbsp;' + text.trim();
+          this.reset();
+          checkStrength('');
+        } else {
+          msg.className = 'error-msg';
+          msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;' + text.trim();
+        }
+      } catch {
+        msg.style.display = 'flex';
+        msg.className = 'error-msg';
+        msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;Connection error.';
+      }
+      btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> &nbsp;Register Member';
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>

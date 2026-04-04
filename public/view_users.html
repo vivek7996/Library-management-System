@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Users — Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 14px; }
+    .filter-bar input { flex: 1; padding: 10px 14px; font-size: 0.95rem; }
+    .summary-strip {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-faded);
+      margin-bottom: 10px;
+    }
+    .summary-strip strong { color: var(--gilt); }
+    .avatar {
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--parchment-dark);
+      border: 1px solid var(--border-gilt);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--gilt);
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    #loadBtn { margin: 0 auto; display: block; }
+    #status { display: none; }
+    #tableWrap { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:600px;">
+    <div style="text-align:center; font-size:2rem; margin-bottom:10px;">👥</div>
+    <h1>Registered Members</h1>
+    <p class="subtitle">All student accounts in the system</p>
+
+    <button id="loadBtn" onclick="loadUsers()">
+      <i class="fa-solid fa-rotate"></i> &nbsp;Load All Users
+    </button>
+
+    <div id="status" style="margin-top:14px;"></div>
+    <div id="userList" style="margin-top:14px;"></div>
+
+    <div style="text-align:center; margin-top:20px;">
+      <a href="admin.html" class="back-link">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    async function loadUsers() {
+      const btn = document.getElementById('loadBtn');
+      const status = document.getElementById('status');
+      const userList = document.getElementById('userList');
+      btn.innerHTML = '<span class="loading"></span>';
+      btn.disabled = true;
+      status.style.display = 'flex';
+      status.className = 'info-msg';
+      status.innerHTML = '<span class="loading"></span> &nbsp;Fetching members…';
+      userList.innerHTML = '';
+      try {
+        const res = await fetch('/view-users');
+        const text = await res.text();
+        status.style.display = 'none';
+        if (text.includes('No users')) {
+          userList.innerHTML = '<div class="error-msg"><i class="fa-solid fa-users-slash"></i> &nbsp;No members registered yet.</div>';
+          btn.innerHTML = '<i class="fa-solid fa-rotate"></i> &nbsp;Reload';
+          btn.disabled = false;
+          return;
+        }
+        // Parse lines: "ID: 1, Username: foo"
+        const lines = text.trim().split('\n').filter(l => l.trim() && l.includes('ID:'));
+        const users = lines.map(line => {
+          const idM = line.match(/ID:\s*(\d+)/);
+          const nameM = line.match(/Username:\s*(.+)/);
+          return {
+            id: idM ? idM[1] : '—',
+            username: nameM ? nameM[1].trim() : '—'
+          };
+        });
+
+        userList.innerHTML = `
+          <div class="filter-bar">
+            <input type="text" id="filterInput" placeholder="Filter by username…" oninput="filterUsers()">
+          </div>
+          <div class="summary-strip" id="summary">Showing <strong>${users.length}</strong> members</div>
+          <div class="table-container" id="tableWrap">
+            <table id="usersTable">
+              <thead>
+                <tr><th>ID</th><th>Member</th><th>Role</th></tr>
+              </thead>
+              <tbody id="tableBody">
+                ${users.map(u => `
+                  <tr data-name="${u.username.toLowerCase()}">
+                    <td>${u.id}</td>
+                    <td>
+                      <div class="user-cell">
+                        <div class="avatar">${u.username.slice(0,2)}</div>
+                        <span style="font-family:'Crimson Pro',serif; font-weight:600;">${u.username}</span>
+                      </div>
+                    </td>
+                    <td><span class="badge badge-forest">Student</span></td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+      } catch {
+        status.style.display = 'flex';
+        status.className = 'error-msg';
+        status.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;Connection error.';
+      }
+      btn.innerHTML = '<i class="fa-solid fa-rotate"></i> &nbsp;Reload';
+      btn.disabled = false;
+    }
+
+    function filterUsers() {
+      const kw = document.getElementById('filterInput').value.toLowerCase();
+      const rows = document.querySelectorAll('#tableBody tr');
+      let visible = 0;
+      rows.forEach(row => {
+        const match = row.dataset.name.includes(kw);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      document.getElementById('summary').innerHTML = 'Showing <strong>' + visible + '</strong> members';
+    }
+  </script>
+</body>
+</html>

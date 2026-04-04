@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Library System</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .login-icon {
+      font-size: 2.4rem;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .role-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 1px solid var(--border-ink);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .role-tab {
+      padding: 11px;
+      text-align: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: var(--parchment);
+      color: var(--ink-faded);
+      border: none;
+      transition: all 0.2s ease;
+      box-shadow: none;
+    }
+    .role-tab.active {
+      background: var(--ink);
+      color: var(--gilt-pale);
+      transform: none;
+    }
+    .role-tab:hover:not(.active) {
+      background: var(--parchment-dark);
+      color: var(--ink);
+      transform: none;
+      box-shadow: none;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 0;
+    }
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-faded);
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+    .input-wrap input {
+      padding-left: 40px;
+    }
+    .toggle-pw {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: var(--ink-faded);
+      font-size: 0.85rem;
+      background: none;
+      border: none;
+      padding: 0;
+      box-shadow: none;
+      text-transform: none;
+      letter-spacing: 0;
+      font-family: inherit;
+    }
+    .toggle-pw:hover { color: var(--gilt); transform: translateY(-50%); box-shadow: none; }
+    #loginMsg { display: none; }
+    .hint-box {
+      background: rgba(184,146,42,0.07);
+      border: 1px solid var(--border-gilt);
+      border-radius: 2px;
+      padding: 10px 14px;
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.88rem;
+      color: var(--ink-faded);
+      font-style: italic;
+    }
+    .hint-box strong { font-style: normal; color: var(--gilt); }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width:440px;">
+    <div class="login-icon">🔐</div>
+    <h1>Member Login</h1>
+    <p class="subtitle">Sign in to access the library</p>
+
+    <div class="role-tabs">
+      <button class="role-tab active" onclick="setRole('admin', this)">
+        <i class="fa-solid fa-shield-halved"></i> Admin
+      </button>
+      <button class="role-tab" onclick="setRole('student', this)">
+        <i class="fa-solid fa-graduation-cap"></i> Student
+      </button>
+    </div>
+
+    <form id="loginForm" action="/login" method="post">
+      <input type="hidden" name="role" id="roleInput" value="admin">
+
+      <div class="form-group">
+        <label for="username"><i class="fa-solid fa-user"></i> Username</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-at"></i>
+          <input type="text" id="username" name="username" placeholder="Enter your username" autocomplete="username" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+          <button type="button" class="toggle-pw" onclick="togglePw()" title="Show/hide password">
+            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="loginMsg" class="error-msg"></div>
+
+      <button type="submit"><i class="fa-solid fa-right-to-bracket"></i> &nbsp;Sign In</button>
+    </form>
+
+    <div class="section-rule" style="margin-top:20px;"><span>demo hint</span></div>
+    <div class="hint-box">
+      Admin: <strong>admin</strong> / <strong>admin123</strong><br>
+      Students: use your assigned credentials
+    </div>
+
+    <div style="text-align:center; margin-top:20px;">
+      <a href="index.html" class="back-link">Back to Home</a>
+    </div>
+  </div>
+
+  <script>
+    function setRole(role, el) {
+      document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('roleInput').value = role;
+    }
+    function togglePw() {
+      const pw = document.getElementById('password');
+      const icon = document.getElementById('eyeIcon');
+      if (pw.type === 'password') {
+        pw.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+      } else {
+        pw.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+      }
+    }
+    // Handle server response redirect
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const params = new URLSearchParams(formData);
+      try {
+        const res = await fetch('/login', { method: 'POST', body: params });
+        const text = await res.text();
+        if (text.includes('successful')) {
+          const role = text.includes('admin') ? 'admin' : 'student';
+          window.location.href = role === 'admin' ? 'admin.html' : 'student.html';
+        } else {
+          const msg = document.getElementById('loginMsg');
+          msg.style.display = 'flex';
+          msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> &nbsp;Invalid username or password.';
+        }
+      } catch {
+        window.location.href = this.action;
+      }
+    });
+  </script>
+</body>
+</html>
